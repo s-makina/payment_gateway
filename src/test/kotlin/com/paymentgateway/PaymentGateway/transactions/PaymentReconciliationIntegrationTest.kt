@@ -77,11 +77,11 @@ class PaymentReconciliationIntegrationTest {
                         )
                     )
             )
-            // INV-PAID resolves to a completed (paid) transaction.
+            // RTP-PAID0001 resolves to a completed (paid) transaction.
             wireMock.stubFor(
                 wireMockPost(urlEqualTo("/collections/getTransaction"))
                     .atPriority(1)
-                    .withRequestBody(matchingJsonPath("$.transactionReferenceNumber", equalTo("INV-PAID")))
+                    .withRequestBody(matchingJsonPath("$.transactionReferenceNumber", equalTo("RTP-PAID0001")))
                     .willReturn(
                         okJson(
                             """
@@ -113,28 +113,35 @@ class PaymentReconciliationIntegrationTest {
     lateinit var reconciliationService: PaymentReconciliationService
 
     @Test
-    fun `reconciles paid, expired, and still-pending transactions`() {
+    fun `reconciles paid, expired, short-reference, and still-pending transactions`() {
         val expiredId = seedTransaction(
-            reference = "INV-EXPIRED",
+            reference = "RTP-EXPIRED01",
             status = PaymentStatus.AWAITING_CUSTOMER_PAYMENT,
             expiryDate = "2026-01-01T00:00:00Z"
         )
         val paidId = seedTransaction(
-            reference = "INV-PAID",
+            reference = "RTP-PAID0001",
             status = PaymentStatus.AWAITING_CUSTOMER_PAYMENT,
             expiryDate = "2099-01-01T00:00:00Z"
         )
         val pendingId = seedTransaction(
-            reference = "INV-PENDING",
+            reference = "RTP-PENDING1",
             status = PaymentStatus.AWAITING_CUSTOMER_PAYMENT,
             expiryDate = "2099-01-01T00:00:00Z"
+        )
+        // Merchant-initiate references (not 12-14 chars) can never be queried at
+        // the gateway, so the gateway guard reports pending and expiry applies.
+        val shortRefExpiredId = seedTransaction(
+            reference = "INV10001",
+            status = PaymentStatus.AWAITING_CUSTOMER_PAYMENT,
+            expiryDate = "2026-01-01T00:00:00Z"
         )
 
         val summary = runBlocking { reconciliationService.reconcilePendingTransactions() }
 
-        assertEquals(3, summary.checked)
+        assertEquals(4, summary.checked)
         assertEquals(1, summary.updated)
-        assertEquals(1, summary.expired)
+        assertEquals(2, summary.expired)
         assertEquals(0, summary.failed)
         assertEquals(0, summary.skipped)
 
@@ -142,6 +149,11 @@ class PaymentReconciliationIntegrationTest {
         val expired = transactionRepository.findById(expiredId).get()
         assertEquals(PaymentStatus.EXPIRED, expired.status)
         assertNotNull(expired.completedAt)
+
+        // Merchant reference too short to query; TAN lapsed -> EXPIRED without a call.
+        val shortRefExpired = transactionRepository.findById(shortRefExpiredId).get()
+        assertEquals(PaymentStatus.EXPIRED, shortRefExpired.status)
+        assertNotNull(shortRefExpired.completedAt)
 
         // Gateway reports the payment completed -> SUCCESS with the gateway ref captured.
         val paid = transactionRepository.findById(paidId).get()
@@ -159,7 +171,7 @@ class PaymentReconciliationIntegrationTest {
     @Test
     fun `second reconciliation run is a no-op once transactions are terminal`() {
         val expiredId = seedTransaction(
-            reference = "INV-EXPIRED-2",
+            reference = "RTP-EXPIRED02",
             status = PaymentStatus.AWAITING_CUSTOMER_PAYMENT,
             expiryDate = "2026-01-01T00:00:00Z"
         )

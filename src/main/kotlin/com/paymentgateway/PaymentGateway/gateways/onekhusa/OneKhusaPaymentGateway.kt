@@ -47,6 +47,21 @@ class OneKhusaPaymentGateway(
     }
 
     override suspend fun getPaymentStatus(transactionReference: String): PaymentStatusResult {
+        // OneKhusa's getTransaction only accepts the gateway-assigned transaction
+        // reference (12-14 chars), which for a request-to-pay exists only once the
+        // customer has paid and is learned via the webhook. The merchant initiate
+        // reference is rejected with E900, so without this guard a request-to-pay
+        // awaiting the customer would 400 on every poll. Returning PENDING keeps
+        // the transaction in AWAITING_CUSTOMER_PAYMENT and lets the reconciliation
+        // job expire it locally once its TAN lapses.
+        if (transactionReference.length !in TRANSACTION_REFERENCE_MIN..TRANSACTION_REFERENCE_MAX) {
+            return PaymentStatusResult(
+                gatewayTransactionId = transactionReference,
+                status = PaymentStatus.PENDING,
+                responseMessage = "Transaction not found at gateway (lookup reference must be " +
+                    "$TRANSACTION_REFERENCE_MIN-$TRANSACTION_REFERENCE_MAX characters)"
+            )
+        }
         val response = collectionsClient.getTransaction(transactionReference)
             ?: return PaymentStatusResult(
                 gatewayTransactionId = transactionReference,
@@ -54,6 +69,11 @@ class OneKhusaPaymentGateway(
                 responseMessage = "Transaction not found at gateway"
             )
         return mapper.toPaymentStatusResult(response, transactionReference)
+    }
+
+    private companion object {
+        const val TRANSACTION_REFERENCE_MIN = 12
+        const val TRANSACTION_REFERENCE_MAX = 14
     }
 
     override suspend fun processWebhook(request: GatewayWebhookRequest): WebhookProcessingResult {
