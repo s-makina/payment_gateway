@@ -20,6 +20,12 @@ class OneKhusaCollectionMapper(
 ) {
 
     fun toRequestToPayRequest(request: PaymentRequest): OneKhusaRequestToPayRequest {
+        require(properties.merchantAccountNumber in MERCHANT_ACCOUNT_MIN..MERCHANT_ACCOUNT_MAX) {
+            "OneKhusa merchant account number is not configured (ONEKHUSA_MERCHANT_ACCOUNT_NUMBER must be 8 digits)"
+        }
+        require(properties.capturedBy.isNotBlank()) {
+            "OneKhusa capturedBy is not configured (ONEKHUSA_CAPTURED_BY must be a background user under the merchant account)"
+        }
         return OneKhusaRequestToPayRequest(
             merchantAccountNumber = properties.merchantAccountNumber,
             transactionAmount = request.amount,
@@ -68,6 +74,11 @@ class OneKhusaCollectionMapper(
                 "transactionStatusCode" to response.transaction?.transactionStatusCode
             )
         )
+    }
+
+    private companion object {
+        const val MERCHANT_ACCOUNT_MIN = 10_000_000L
+        const val MERCHANT_ACCOUNT_MAX = 99_999_999L
     }
 
     private fun metadataOf(vararg entries: Pair<String, Any?>): Map<String, Any> =

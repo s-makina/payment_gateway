@@ -107,7 +107,7 @@ class OneKhusaCollectionsClientTest {
         }
 
         assertEquals("E900", ex.errorCode)
-        assertEquals(HttpStatus.FAILED_DEPENDENCY, ex.status)
+        assertEquals(HttpStatus.BAD_REQUEST, ex.status)
     }
 
     @Test

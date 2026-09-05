@@ -7,9 +7,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain
 
 /**
- * The service exposes a public, provider-neutral payment API; webhook
- * authenticity is verified per-gateway via signatures, not via sessions.
- * Swagger/OpenAPI endpoints must stay publicly reachable for docs.
+ * All endpoints are currently open to the public.
+ * Organisation/merchant authentication will be added later.
+ * Webhook authenticity is still verified per-gateway via signatures.
  */
 @Configuration
 @EnableWebSecurity
@@ -20,15 +20,7 @@ class SecurityConfig {
         http
             .csrf { it.disable() }
             .authorizeHttpRequests {
-                it.requestMatchers(
-                    "/v3/api-docs/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/api/**",
-                    "/actuator/health",
-                    "/h2-console/**"
-                ).permitAll()
-                    .anyRequest().authenticated()
+                it.anyRequest().permitAll()
             }
             .headers { headers ->
                 // h2-console (dev only) renders in a frame

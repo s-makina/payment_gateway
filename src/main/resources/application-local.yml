@@ -27,6 +27,7 @@ payment:
   gateways:
     onekhusa:
       enabled: true
+      captured-by: ${ONEKHUSA_CAPTURED_BY:}
 
 logging:
   level:

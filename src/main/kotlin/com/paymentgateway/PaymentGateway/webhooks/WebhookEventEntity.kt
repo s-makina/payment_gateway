@@ -17,7 +17,7 @@ class WebhookEventEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", columnDefinition = "UUID")
-    val id: UUID = UUID.randomUUID(),
+    var id: UUID? = null,
 
     @Column(name = "event_type", nullable = false, length = 50)
     var eventType: String,

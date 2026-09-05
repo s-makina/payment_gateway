@@ -31,7 +31,7 @@ data class PaymentStatusResponse(
 ) {
     companion object {
         fun from(entity: PaymentTransactionEntity): PaymentStatusResponse = PaymentStatusResponse(
-            transactionId = entity.id,
+            transactionId = requireNotNull(entity.id) { "Transaction ID was not generated on persist" },
             gateway = entity.gateway,
             merchantReference = entity.merchantReference,
             status = entity.status,

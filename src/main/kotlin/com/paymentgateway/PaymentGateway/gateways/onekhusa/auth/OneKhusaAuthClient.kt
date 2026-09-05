@@ -5,6 +5,7 @@ import com.paymentgateway.PaymentGateway.gateways.onekhusa.config.OneKhusaProper
 import com.paymentgateway.PaymentGateway.gateways.onekhusa.dto.request.OneKhusaAccessTokenRequest
 import com.paymentgateway.PaymentGateway.gateways.onekhusa.dto.response.OneKhusaAccessTokenResponse
 import org.springframework.http.MediaType
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -22,6 +23,8 @@ class OneKhusaAuthClient(
 
     private val webClient: WebClient = webClientBuilder.baseUrl(properties.baseUrl).build()
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     suspend fun getAccessToken(): OneKhusaAccessTokenResponse {
         val request = OneKhusaAccessTokenRequest(
             apiKey = properties.apiKey,
@@ -37,6 +40,10 @@ class OneKhusaAuthClient(
                 .retrieve()
                 .awaitBody<String>()
         } catch (ex: WebClientResponseException) {
+            log.warn(
+                "OneKhusa token request failed: status={} body={}",
+                ex.statusCode.value(), ex.responseBodyAsString
+            )
             throw errorMapper.mapError(ex)
         }
         return objectMapper.readValue(body)

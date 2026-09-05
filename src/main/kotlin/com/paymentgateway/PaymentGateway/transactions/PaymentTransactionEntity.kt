@@ -23,7 +23,7 @@ class PaymentTransactionEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", columnDefinition = "UUID")
-    val id: UUID = UUID.randomUUID(),
+    var id: UUID? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "gateway", nullable = false, length = 50)

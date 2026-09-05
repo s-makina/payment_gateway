@@ -9,5 +9,6 @@ import org.springframework.boot.runApplication
 class PaymentGatewayApplication
 
 fun main(args: Array<String>) {
+	DotEnvLoader.load()
 	runApplication<PaymentGatewayApplication>(*args)
 }

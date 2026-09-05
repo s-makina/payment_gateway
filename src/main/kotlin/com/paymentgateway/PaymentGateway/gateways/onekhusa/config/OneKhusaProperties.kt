@@ -12,5 +12,5 @@ data class OneKhusaProperties(
     val organisationId: String = "",
     val merchantAccountNumber: Long = 0,
     val webhookSecret: String = "",
-    val capturedBy: String = "payments@paymentgateway.local"
+    val capturedBy: String = "salvation.developer@gmail.com"
 )

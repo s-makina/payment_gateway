@@ -17,7 +17,7 @@ class IdempotencyKeyEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", columnDefinition = "UUID")
-    val id: UUID = UUID.randomUUID(),
+    var id: UUID? = null,
 
     @Column(name = "idempotency_key", nullable = false, length = 80)
     var idempotencyKey: String,

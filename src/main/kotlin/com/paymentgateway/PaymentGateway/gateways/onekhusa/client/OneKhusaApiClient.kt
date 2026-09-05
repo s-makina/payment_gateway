@@ -3,6 +3,7 @@ package com.paymentgateway.PaymentGateway.gateways.onekhusa.client
 import com.paymentgateway.PaymentGateway.gateways.onekhusa.auth.OneKhusaTokenProvider
 import com.paymentgateway.PaymentGateway.gateways.onekhusa.config.OneKhusaProperties
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -19,6 +20,8 @@ class OneKhusaApiClient(
 ) {
 
     private val webClient: WebClient = webClientBuilder.baseUrl(properties.baseUrl).build()
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * POSTs to the given path with the cached bearer token and returns the raw
@@ -48,6 +51,11 @@ class OneKhusaApiClient(
                 responseSpec.awaitBody()
             }
         } catch (ex: WebClientResponseException) {
+            // RFC 7807 error bodies carry no credentials — safe to log.
+            log.warn(
+                "OneKhusa request failed: path={} status={} body={}",
+                path, ex.statusCode.value(), ex.responseBodyAsString
+            )
             throw errorMapper.mapError(ex)
         }
     }

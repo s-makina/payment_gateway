@@ -33,4 +33,5 @@ payment:
       api-secret: ${ONEKHUSA_API_SECRET:}
       organisation-id: ${ONEKHUSA_ORGANISATION_ID:}
       merchant-account-number: ${ONEKHUSA_MERCHANT_ACCOUNT_NUMBER:}
+      captured-by: ${ONEKHUSA_CAPTURED_BY:}
       webhook-secret: ${ONEKHUSA_WEBHOOK_SECRET:}

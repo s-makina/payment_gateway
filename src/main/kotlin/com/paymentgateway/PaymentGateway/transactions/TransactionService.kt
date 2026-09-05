@@ -77,8 +77,9 @@ class TransactionService(
         }
         transactionRepository.save(transaction)
 
-        val finalResponse = response.copy(transactionId = transaction.id.toString())
-        idempotencyService.record(key, requestHash, transaction.id, finalResponse)
+        val transactionId = requireNotNull(transaction.id) { "Transaction ID was not generated on persist" }
+        val finalResponse = response.copy(transactionId = transactionId.toString())
+        idempotencyService.record(key, requestHash, transactionId, finalResponse)
         return finalResponse
     }
 
