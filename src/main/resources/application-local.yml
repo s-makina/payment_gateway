@@ -23,6 +23,11 @@ spring:
   flyway:
     enabled: true
 
+payment:
+  gateways:
+    onekhusa:
+      enabled: true
+
 logging:
   level:
     com.paymentgateway: DEBUG

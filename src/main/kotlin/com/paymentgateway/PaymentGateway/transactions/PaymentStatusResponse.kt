@@ -3,19 +3,30 @@ package com.paymentgateway.PaymentGateway.transactions
 import com.paymentgateway.PaymentGateway.core.domain.GatewayType
 import com.paymentgateway.PaymentGateway.core.domain.PaymentStatus
 import com.paymentgateway.PaymentGateway.core.domain.PaymentType
+import io.swagger.v3.oas.annotations.media.Schema
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
+@Schema(description = "Current state of a payment transaction")
 data class PaymentStatusResponse(
+    @Schema(description = "Internal transaction ID")
     val transactionId: UUID,
+    @Schema(description = "Gateway handling the payment", example = "ONEKHUSA")
     val gateway: GatewayType,
+    @Schema(description = "Merchant reference", example = "INV-10001")
     val merchantReference: String,
+    @Schema(description = "Current transaction status", example = "SUCCESS")
     val status: PaymentStatus,
+    @Schema(description = "Type of payment", example = "REQUEST_TO_PAY")
     val paymentType: PaymentType,
+    @Schema(description = "Payment amount", example = "10000")
     val amount: BigDecimal,
+    @Schema(description = "ISO currency code", example = "MWK")
     val currency: String,
+    @Schema(description = "Gateway-side transaction identifier, if known")
     val gatewayTransactionId: String? = null,
+    @Schema(description = "Completion timestamp, once terminal")
     val completedAt: Instant? = null
 ) {
     companion object {

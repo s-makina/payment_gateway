@@ -55,6 +55,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
 
+	// API documentation (springdoc 3.x is the Boot 4-compatible line)
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
+
 	// H2 Console (dev only)
 	implementation("org.springframework.boot:spring-boot-h2console")
 
