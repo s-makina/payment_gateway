@@ -13,4 +13,25 @@ data class OneKhusaProperties(
     val merchantAccountNumber: Long = 0,
     val webhookSecret: String = "",
     val capturedBy: String = "salvation.developer@gmail.com"
-)
+) {
+
+    /**
+     * Validates the settings required to initiate a collection (request-to-pay).
+     * Invoked at startup (fail fast when the gateway is enabled) and again by the
+     * mapper as a defence in depth. Uses [require] so a blank/missing value surfaces
+     * as a clear configuration error rather than a cryptic gateway failure.
+     */
+    fun requireValidCollectionConfig() {
+        require(merchantAccountNumber in MERCHANT_ACCOUNT_MIN..MERCHANT_ACCOUNT_MAX) {
+            "OneKhusa merchant account number is not configured (ONEKHUSA_MERCHANT_ACCOUNT_NUMBER must be 8 digits)"
+        }
+        require(capturedBy.isNotBlank()) {
+            "OneKhusa capturedBy is not configured (ONEKHUSA_CAPTURED_BY must be a background user under the merchant account)"
+        }
+    }
+
+    private companion object {
+        const val MERCHANT_ACCOUNT_MIN = 10_000_000L
+        const val MERCHANT_ACCOUNT_MAX = 99_999_999L
+    }
+}
