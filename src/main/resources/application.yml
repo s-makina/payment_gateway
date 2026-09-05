@@ -56,6 +56,12 @@ payment:
       webhook-secret: ${ONEKHUSA_WEBHOOK_SECRET:}
       captured-by: ${ONEKHUSA_CAPTURED_BY:salvation.developer@gmail.com}
 
+  reconciliation:
+    # Periodic gateway status reconciliation: catches payments whose completion
+    # webhook was missed, and auto-expires request-to-pays whose TAN lapsed.
+    enabled: true
+    interval-ms: 30000
+
 logging:
   level:
     com.paymentgateway: INFO

@@ -7,7 +7,12 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers(disabledWithoutDocker = true)
-@SpringBootTest
+@SpringBootTest(
+    properties = [
+        // Keep reconciliation runs out of context-loading tests.
+        "payment.reconciliation.enabled=false"
+    ]
+)
 abstract class AbstractIntegrationTest {
 
     companion object {

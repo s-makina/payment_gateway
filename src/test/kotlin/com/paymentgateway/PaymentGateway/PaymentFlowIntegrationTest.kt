@@ -38,7 +38,8 @@ import java.util.UUID
         "payment.gateways.onekhusa.enabled=true",
         "payment.gateways.onekhusa.webhook-secret=test-webhook-secret",
         "payment.gateways.onekhusa.merchant-account-number=12345678",
-        "payment.gateways.onekhusa.captured-by=user@example.com"
+        "payment.gateways.onekhusa.captured-by=user@example.com",
+        "payment.reconciliation.enabled=false"
     ]
 )
 @Import(TestTokenCacheConfig::class)

@@ -84,26 +84,44 @@ class TransactionService(
     }
 
     /**
-     * Returns the current status of a transaction. Polls the gateway when the
-     * transaction has a gateway reference and is not yet in a terminal state.
+     * Returns the current status of a transaction. Polls the gateway whenever the
+     * transaction is not yet terminal and has a usable reference: the gateway id
+     * when known, otherwise the initiate reference stored in gateway_metadata.
+     * The status is only ever advanced to what the gateway reports — auto-expiry
+     * is owned by the periodic reconciliation job.
      */
     @Transactional
     suspend fun getPaymentStatus(transactionId: UUID): PaymentStatusResponse {
         val transaction = transactionRepository.findById(transactionId)
             .orElseThrow { TransactionNotFoundException(transactionId) }
 
-        val gatewayReference = transaction.gatewayTransactionId
+        val gatewayReference = transaction.gatewayLookupReference()
         if (transaction.status.isTerminal() || gatewayReference == null) {
             return PaymentStatusResponse.from(transaction)
         }
 
         val gateway = gatewayResolver.resolve(transaction.gateway)
         val result = gateway.getPaymentStatus(gatewayReference)
+
+        // Learn the gateway-assigned id when the lookup went through the initiate
+        // reference, so later lookups and webhook matching use the real id.
+        var changed = false
+        if (transaction.gatewayTransactionId == null &&
+            result.status != PaymentStatus.PENDING &&
+            result.gatewayTransactionId != gatewayReference
+        ) {
+            transaction.gatewayTransactionId = result.gatewayTransactionId
+            changed = true
+        }
+
         if (result.status != transaction.status && transaction.status.canTransitionTo(result.status)) {
             transaction.transitionTo(result.status)
             if (result.status.isTerminal()) {
                 transaction.completedAt = Instant.now()
             }
+            changed = true
+        }
+        if (changed) {
             transactionRepository.save(transaction)
         }
         return PaymentStatusResponse.from(transaction)
