@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/payment_gateway
-    username: payment_gateway
-    password: payment_gateway
+    username: postgres
+    password: Forcode123!
     driver-class-name: org.postgresql.Driver
 
   h2:

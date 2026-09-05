@@ -67,7 +67,11 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-security-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-	testImplementation("org.wiremock:wiremock:3.5.4")
+	testImplementation("org.wiremock:wiremock:3.5.4") {
+		exclude(group = "org.eclipse.jetty")
+		exclude(group = "org.eclipse.jetty.http2")
+	}
+	testImplementation("org.wiremock:wiremock-jetty12:3.5.4")
 	testImplementation("org.testcontainers:postgresql")
 	testImplementation("org.testcontainers:junit-jupiter")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
@@ -87,6 +91,17 @@ allOpen {
 	annotation("jakarta.persistence.Entity")
 	annotation("jakarta.persistence.MappedSuperclass")
 	annotation("jakarta.persistence.Embeddable")
+}
+
+// WireMock's jetty12 server is built against Jetty 12.0.x, but the Spring Boot BOM
+// forces core Jetty artifacts to 12.1.x. Pinning the whole Jetty tree to 12.0.8 on the
+// test classpath keeps versions consistent; nothing else on the test classpath uses Jetty.
+configurations.testRuntimeClasspath {
+	resolutionStrategy.eachDependency {
+		if (requested.group.startsWith("org.eclipse.jetty")) {
+			useVersion("12.0.8")
+		}
+	}
 }
 
 tasks.withType<Test> {

@@ -78,7 +78,7 @@ class OneKhusaCollectionMapper(
      * characters and pads/truncates to satisfy the constraint.
      */
     fun sanitizeReference(reference: String): String {
-        val sanitized = reference.filter { it.isLetterOrDigit() }
+        val sanitized = reference.filter { it.isLetterOrDigit() }.uppercase()
         val truncated = if (sanitized.length > 25) sanitized.takeLast(25) else sanitized
         return if (truncated.length < 5) truncated.padEnd(5, 'X') else truncated
     }

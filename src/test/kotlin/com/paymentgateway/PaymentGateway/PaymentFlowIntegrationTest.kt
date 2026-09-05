@@ -32,7 +32,7 @@ import tools.jackson.module.kotlin.kotlinModule
 import tools.jackson.module.kotlin.readValue
 import java.util.UUID
 
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(
     properties = [
         "payment.gateways.onekhusa.enabled=true",
