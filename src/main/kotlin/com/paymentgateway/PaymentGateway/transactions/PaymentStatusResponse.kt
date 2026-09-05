@@ -4,6 +4,7 @@ import com.paymentgateway.PaymentGateway.core.domain.GatewayType
 import com.paymentgateway.PaymentGateway.core.domain.PaymentStatus
 import com.paymentgateway.PaymentGateway.core.domain.PaymentType
 import io.swagger.v3.oas.annotations.media.Schema
+import tools.jackson.databind.JsonNode
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
@@ -26,6 +27,8 @@ data class PaymentStatusResponse(
     val currency: String,
     @Schema(description = "Gateway-side transaction identifier, if known")
     val gatewayTransactionId: String? = null,
+    @Schema(description = "Original response payload returned by the gateway on the last status check")
+    val gatewayResponse: JsonNode? = null,
     @Schema(description = "Completion timestamp, once terminal")
     val completedAt: Instant? = null
 ) {

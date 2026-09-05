@@ -1,6 +1,9 @@
 package com.paymentgateway.PaymentGateway
 
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post as wireMockPost
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -10,6 +13,7 @@ import com.paymentgateway.PaymentGateway.core.util.Hashing
 import com.paymentgateway.PaymentGateway.transactions.TransactionRepository
 import com.paymentgateway.PaymentGateway.webhooks.WebhookEventRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -95,6 +99,38 @@ class PaymentFlowIntegrationTest {
                         )
                     )
             )
+            // Status checks: the initiate reference INV10003 resolves to a
+            // completed transaction at the gateway.
+            wireMock.stubFor(
+                wireMockPost(urlEqualTo("/collections/getTransaction"))
+                    .atPriority(1)
+                    .withRequestBody(matchingJsonPath("$.transactionReferenceNumber", equalTo("INV10003")))
+                    .willReturn(
+                        okJson(
+                            """
+                            {
+                              "beneficiary": {
+                                "accountNumber": 12346198,
+                                "amountReceived": 10000,
+                                "currencyCode": "MWK"
+                              },
+                              "transaction": {
+                                "transactionReferenceNumber": "CBPC73IQ5U2E",
+                                "transactionStatusCode": "S",
+                                "responseCode": "S100",
+                                "responseMessage": "Successful transaction"
+                              }
+                            }
+                            """.trimIndent()
+                        )
+                    )
+            )
+            // Any other lookup (e.g. references learned via webhook) is not found.
+            wireMock.stubFor(
+                wireMockPost(urlEqualTo("/collections/getTransaction"))
+                    .withRequestBody(matchingJsonPath("$.transactionReferenceNumber"))
+                    .willReturn(aResponse().withStatus(204))
+            )
         }
     }
 
@@ -136,6 +172,8 @@ class PaymentFlowIntegrationTest {
         assertEquals("AWAITING_CUSTOMER_PAYMENT", initiateMap["status"])
         val paymentInstructions = initiateMap["paymentInstructions"] as Map<*, *>
         assertEquals("11005533", paymentInstructions["timedAccountNumber"])
+        // The original gateway payload is echoed back on the initiate response.
+        assertNotNull(initiateMap["gatewayResponse"])
 
         // 2. Deliver a signed payrequest.success webhook
         val webhookBody = """
@@ -192,6 +230,52 @@ class PaymentFlowIntegrationTest {
         val transaction = transactionRepository.findById(UUID.fromString(transactionId)).get()
         assertEquals(PaymentStatus.SUCCESS, transaction.status)
         assertEquals("TXN123", transaction.gatewayTransactionId)
+    }
+
+    @Test
+    fun `status poll embeds the original gateway response`() {
+        val initiateBody = """
+            {
+              "gateway": "ONEKHUSA",
+              "paymentType": "REQUEST_TO_PAY",
+              "amount": 10000,
+              "currency": "MWK",
+              "reference": "INV-10003",
+              "description": "Status poll test"
+            }
+        """.trimIndent()
+
+        val initiateResponse = mockMvc.perform(
+            post("/api/v1/payments")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(initiateBody)
+        )
+            .andExpect(status().isOk)
+            .andReturn().response.contentAsString
+        val initiateMap: Map<String, Any> = objectMapper.readValue(initiateResponse)
+        val transactionId = initiateMap["transactionId"] as String
+
+        // The gateway reports the transaction completed; the local status is
+        // advanced to what the gateway said and its original payload is embedded.
+        mockMvc.perform(get("/api/v1/payments/$transactionId"))
+            .andExpect(status().isOk)
+            .andExpect(content().json(
+                """
+                {
+                  "transactionId": "$transactionId",
+                  "status": "SUCCESS",
+                  "gatewayTransactionId": "CBPC73IQ5U2E",
+                  "gatewayResponse": {
+                    "transaction": {
+                      "transactionReferenceNumber": "CBPC73IQ5U2E",
+                      "transactionStatusCode": "S",
+                      "responseCode": "S100",
+                      "responseMessage": "Successful transaction"
+                    }
+                  }
+                }
+                """.trimIndent()
+            ))
     }
 
     @Test

@@ -124,7 +124,7 @@ class TransactionService(
         if (changed) {
             transactionRepository.save(transaction)
         }
-        return PaymentStatusResponse.from(transaction)
+        return PaymentStatusResponse.from(transaction).copy(gatewayResponse = result.gatewayResponse)
     }
 
     /**

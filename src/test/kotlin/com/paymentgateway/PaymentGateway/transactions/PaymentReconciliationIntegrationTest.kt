@@ -6,7 +6,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post as wireMockPost
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.verify
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.paymentgateway.PaymentGateway.TestTokenCacheConfig
 import com.paymentgateway.PaymentGateway.core.domain.GatewayType
@@ -129,8 +131,10 @@ class PaymentReconciliationIntegrationTest {
             status = PaymentStatus.AWAITING_CUSTOMER_PAYMENT,
             expiryDate = "2099-01-01T00:00:00Z"
         )
-        // Merchant-initiate references (not 12-14 chars) can never be queried at
-        // the gateway, so the gateway guard reports pending and expiry applies.
+        // Merchant-initiate references are short (not the 12-14 char gateway
+        // transaction reference) but are still sent to the check endpoint — no
+        // length-based assumption. The gateway answers 204 not found -> PENDING,
+        // so the TAN-lapsed transaction still expires.
         val shortRefExpiredId = seedTransaction(
             reference = "INV10001",
             status = PaymentStatus.AWAITING_CUSTOMER_PAYMENT,
@@ -150,10 +154,17 @@ class PaymentReconciliationIntegrationTest {
         assertEquals(PaymentStatus.EXPIRED, expired.status)
         assertNotNull(expired.completedAt)
 
-        // Merchant reference too short to query; TAN lapsed -> EXPIRED without a call.
+        // Short merchant reference was still sent to the gateway (source of truth)
+        // and the gateway said not found; TAN lapsed -> EXPIRED.
         val shortRefExpired = transactionRepository.findById(shortRefExpiredId).get()
         assertEquals(PaymentStatus.EXPIRED, shortRefExpired.status)
         assertNotNull(shortRefExpired.completedAt)
+
+        // No assumptions: the check endpoint was consulted for the short reference too.
+        wireMock.verify(
+            postRequestedFor(urlEqualTo("/collections/getTransaction"))
+                .withRequestBody(matchingJsonPath("$.transactionReferenceNumber", equalTo("INV10001")))
+        )
 
         // Gateway reports the payment completed -> SUCCESS with the gateway ref captured.
         val paid = transactionRepository.findById(paidId).get()

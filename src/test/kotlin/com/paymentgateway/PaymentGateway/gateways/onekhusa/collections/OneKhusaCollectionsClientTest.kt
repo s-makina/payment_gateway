@@ -62,7 +62,7 @@ class OneKhusaCollectionsClientTest {
                 )
         )
 
-        val response = client().initiateRequestToPay(
+        val result = client().initiateRequestToPay(
             OneKhusaRequestToPayRequest(
                 merchantAccountNumber = 12345678,
                 transactionAmount = BigDecimal("100.00"),
@@ -73,8 +73,10 @@ class OneKhusaCollectionsClientTest {
             "key-123"
         )
 
-        assertEquals("11005533", response.timedAccountNumber)
-        assertEquals(15, response.expiryInMinutes)
+        assertEquals("11005533", result.response.timedAccountNumber)
+        assertEquals(15, result.response.expiryInMinutes)
+        // The original gateway payload is preserved for callers.
+        assertEquals("11005533", result.rawResponse?.get("timedAccountNumber")?.asText())
     }
 
     @Test
@@ -111,13 +113,15 @@ class OneKhusaCollectionsClientTest {
     }
 
     @Test
-    fun `get transaction returns null on 204 not found`() = runBlocking {
+    fun `get transaction returns empty result on 204 not found`() = runBlocking {
         wireMock.stubFor(
             post(urlEqualTo("/collections/getTransaction"))
                 .willReturn(aResponse().withStatus(204))
         )
 
-        assertNull(client().getTransaction("NONEXISTENT"))
+        val result = client().getTransaction("NONEXISTENT")
+        assertNull(result.response)
+        assertNull(result.rawResponse)
     }
 
     @Test
@@ -157,12 +161,15 @@ class OneKhusaCollectionsClientTest {
                 )
         )
 
-        val response = client().getTransaction("CBPC73IQ5U2E")
+        val result = client().getTransaction("CBPC73IQ5U2E")
+        val response = result.response
 
         assertEquals("CBPC73IQ5U2E", response?.transaction?.transactionReferenceNumber)
         assertEquals("S", response?.transaction?.transactionStatusCode)
         assertEquals("MWK", response?.beneficiary?.currencyCode)
         assertEquals(49500, response?.beneficiary?.amountReceived?.toInt())
+        // The original gateway payload is preserved for callers.
+        assertEquals("CBPC73IQ5U2E", result.rawResponse?.get("transaction")?.get("transactionReferenceNumber")?.asText())
     }
 
     private fun client(): OneKhusaCollectionsClient {

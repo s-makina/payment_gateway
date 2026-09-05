@@ -10,6 +10,7 @@ import com.paymentgateway.PaymentGateway.gateways.onekhusa.dto.response.OneKhusa
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import tools.jackson.databind.json.JsonMapper
 import java.math.BigDecimal
 
 class OneKhusaCollectionMapperTest {
@@ -62,13 +63,15 @@ class OneKhusaCollectionMapperTest {
             expiryDate = "2099-01-01T00:00:00Z",
             expiryInMinutes = 15
         )
-        val paymentResponse = mapper.toPaymentResponse(response, request)
+        val gatewayResponse = JsonMapper().readTree("""{"timedAccountNumber":"11005533"}""")
+        val paymentResponse = mapper.toPaymentResponse(response, request, gatewayResponse)
         assertEquals(PaymentStatus.AWAITING_CUSTOMER_PAYMENT, paymentResponse.status)
         assertEquals("INV-10001", paymentResponse.reference)
         assertEquals("11005533", paymentResponse.paymentInstructions?.get("timedAccountNumber"))
         assertEquals(15, paymentResponse.paymentInstructions?.get("expiryInMinutes"))
         assertEquals("INV10001", paymentResponse.paymentInstructions?.get("referenceNumber"))
         assertNull(paymentResponse.gatewayTransactionId)
+        assertEquals("11005533", paymentResponse.gatewayResponse?.get("timedAccountNumber")?.asText())
     }
 
     @Test
@@ -86,5 +89,22 @@ class OneKhusaCollectionMapperTest {
         assertEquals(PaymentStatus.FAILED, result("F").status)
         assertEquals(PaymentStatus.REVERSED, result("R").status)
         assertEquals(PaymentStatus.PENDING, result("X").status)
+    }
+
+    @Test
+    fun `keeps the original gateway response on the status result`() {
+        val gatewayResponse = JsonMapper().readTree("""{"transaction":{"transactionReferenceNumber":"CBPC73IQ5U2E"}}""")
+        val result = mapper.toPaymentStatusResult(
+            OneKhusaTransactionResponse(
+                transaction = OneKhusaTransactionResponse.TransactionInfo(
+                    transactionReferenceNumber = "CBPC73IQ5U2E",
+                    transactionStatusCode = "S"
+                )
+            ),
+            "CBPC73IQ5U2E",
+            gatewayResponse
+        )
+        assertEquals(PaymentStatus.SUCCESS, result.status)
+        assertEquals("CBPC73IQ5U2E", result.gatewayResponse?.get("transaction")?.get("transactionReferenceNumber")?.asText())
     }
 }

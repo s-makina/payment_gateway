@@ -3,6 +3,7 @@ package com.paymentgateway.PaymentGateway.core.gateway
 import com.paymentgateway.PaymentGateway.core.domain.GatewayType
 import com.paymentgateway.PaymentGateway.core.domain.PaymentStatus
 import io.swagger.v3.oas.annotations.media.Schema
+import tools.jackson.databind.JsonNode
 import java.time.Instant
 
 @Schema(description = "Provider-neutral payment initiation result")
@@ -19,6 +20,8 @@ data class PaymentResponse(
     val gatewayTransactionId: String? = null,
     @Schema(description = "Gateway payment instructions (e.g. timed account number)")
     val paymentInstructions: Map<String, Any>? = null,
+    @Schema(description = "Original response payload returned by the gateway")
+    val gatewayResponse: JsonNode? = null,
     @Schema(description = "Creation timestamp")
     val createdAt: Instant = Instant.now()
 )

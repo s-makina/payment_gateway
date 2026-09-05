@@ -42,38 +42,24 @@ class OneKhusaPaymentGateway(
         }
         val idempotencyKey = request.idempotencyKey ?: UUID.randomUUID().toString()
         val oneKhusaRequest = mapper.toRequestToPayRequest(request)
-        val response = collectionsClient.initiateRequestToPay(oneKhusaRequest, idempotencyKey)
-        return mapper.toPaymentResponse(response, request)
+        val initiate = collectionsClient.initiateRequestToPay(oneKhusaRequest, idempotencyKey)
+        return mapper.toPaymentResponse(initiate.response, request, initiate.rawResponse)
     }
 
     override suspend fun getPaymentStatus(transactionReference: String): PaymentStatusResult {
-        // OneKhusa's getTransaction only accepts the gateway-assigned transaction
-        // reference (12-14 chars), which for a request-to-pay exists only once the
-        // customer has paid and is learned via the webhook. The merchant initiate
-        // reference is rejected with E900, so without this guard a request-to-pay
-        // awaiting the customer would 400 on every poll. Returning PENDING keeps
-        // the transaction in AWAITING_CUSTOMER_PAYMENT and lets the reconciliation
-        // job expire it locally once its TAN lapses.
-        if (transactionReference.length !in TRANSACTION_REFERENCE_MIN..TRANSACTION_REFERENCE_MAX) {
-            return PaymentStatusResult(
-                gatewayTransactionId = transactionReference,
-                status = PaymentStatus.PENDING,
-                responseMessage = "Transaction not found at gateway (lookup reference must be " +
-                    "$TRANSACTION_REFERENCE_MIN-$TRANSACTION_REFERENCE_MAX characters)"
-            )
-        }
-        val response = collectionsClient.getTransaction(transactionReference)
+        // The gateway's check endpoint is the source of truth: every lookup is
+        // forwarded to /collections/getTransaction regardless of what the
+        // reference looks like. A 204 (transaction not found) is normalized to
+        // PENDING, which keeps a request-to-pay in AWAITING_CUSTOMER_PAYMENT and
+        // lets the reconciliation job expire it locally once its TAN lapses.
+        val lookup = collectionsClient.getTransaction(transactionReference)
+        val response = lookup.response
             ?: return PaymentStatusResult(
                 gatewayTransactionId = transactionReference,
                 status = PaymentStatus.PENDING,
                 responseMessage = "Transaction not found at gateway"
             )
-        return mapper.toPaymentStatusResult(response, transactionReference)
-    }
-
-    private companion object {
-        const val TRANSACTION_REFERENCE_MIN = 12
-        const val TRANSACTION_REFERENCE_MAX = 14
+        return mapper.toPaymentStatusResult(response, transactionReference, lookup.rawResponse)
     }
 
     override suspend fun processWebhook(request: GatewayWebhookRequest): WebhookProcessingResult {

@@ -9,6 +9,7 @@ import com.paymentgateway.PaymentGateway.gateways.onekhusa.dto.request.OneKhusaR
 import com.paymentgateway.PaymentGateway.gateways.onekhusa.dto.response.OneKhusaRequestToPayResponse
 import com.paymentgateway.PaymentGateway.gateways.onekhusa.dto.response.OneKhusaTransactionResponse
 import org.springframework.stereotype.Component
+import tools.jackson.databind.JsonNode
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
@@ -33,7 +34,8 @@ class OneKhusaCollectionMapper(
 
     fun toPaymentResponse(
         response: OneKhusaRequestToPayResponse,
-        request: PaymentRequest
+        request: PaymentRequest,
+        gatewayResponse: JsonNode? = null
     ): PaymentResponse {
         return PaymentResponse(
             transactionId = UUID.randomUUID().toString(),
@@ -45,13 +47,15 @@ class OneKhusaCollectionMapper(
                 response.expiryDate?.let { put("expiryDate", it) }
                 response.expiryInMinutes?.let { put("expiryInMinutes", it) }
                 put("referenceNumber", sanitizeReference(request.reference))
-            }
+            },
+            gatewayResponse = gatewayResponse
         )
     }
 
     fun toPaymentStatusResult(
         response: OneKhusaTransactionResponse,
-        transactionReference: String
+        transactionReference: String,
+        gatewayResponse: JsonNode? = null
     ): PaymentStatusResult {
         return PaymentStatusResult(
             gatewayTransactionId = response.transaction?.transactionReferenceNumber ?: transactionReference,
@@ -68,7 +72,8 @@ class OneKhusaCollectionMapper(
                 "sourceCustomerName" to response.source?.customerName,
                 "transactionFee" to response.transaction?.transactionFee,
                 "transactionStatusCode" to response.transaction?.transactionStatusCode
-            )
+            ),
+            gatewayResponse = gatewayResponse
         )
     }
 
