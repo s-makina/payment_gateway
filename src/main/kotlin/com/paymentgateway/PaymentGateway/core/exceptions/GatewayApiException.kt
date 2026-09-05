@@ -10,5 +10,6 @@ import org.springframework.http.HttpStatus
 class GatewayApiException(
     val status: HttpStatus,
     val errorCode: String,
-    override val message: String
+    override val message: String,
+    val errors: List<String>? = null
 ) : RuntimeException(message)
