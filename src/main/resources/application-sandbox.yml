@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payment_gateway_sandbox
+    username: payment_gateway
+    password: payment_gateway
+    driver-class-name: org.postgresql.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    com.paymentgateway: INFO
+    org.springframework.web: INFO
+
+payment:
+  gateways:
+    onekhusa:
+      enabled: true
+      environment: sandbox
+      base-url: https://api.onekhusa.com/sandbox/v1
+      api-key: ${ONEKHUSA_API_KEY:}
+      api-secret: ${ONEKHUSA_API_SECRET:}
+      organisation-id: ${ONEKHUSA_ORGANISATION_ID:}
+      merchant-account-number: ${ONEKHUSA_MERCHANT_ACCOUNT_NUMBER:}
+      webhook-secret: ${ONEKHUSA_WEBHOOK_SECRET:}
