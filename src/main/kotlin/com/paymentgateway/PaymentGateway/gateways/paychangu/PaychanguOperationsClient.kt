@@ -32,7 +32,10 @@ class PaychanguOperationsClient(
     suspend fun initiateCheckout(request: PaychanguCheckoutRequest): PaychanguInitiateResult {
         val body = apiClient.post(path = "/payment", body = request)
         val envelope = objectMapper.readValue<PaychanguEnvelope<PaychanguCheckoutData>>(body)
-        val data = requireNotNull(envelope.data?.checkoutUrl) {
+        val data = requireNotNull(envelope.data) {
+            "Paychangu checkout response did not include data.checkout_url: ${envelope.message}"
+        }
+        require(!data.checkoutUrl.isNullOrBlank()) {
             "Paychangu checkout response did not include a checkout_url: ${envelope.message}"
         }
         return PaychanguInitiateResult(
@@ -49,7 +52,10 @@ class PaychanguOperationsClient(
     suspend fun initiateDirectCharge(request: PaychanguDirectChargeRequest): PaychanguDirectChargeResult {
         val body = apiClient.post(path = "/mobile-money/payments/initialize", body = request)
         val envelope = objectMapper.readValue<PaychanguEnvelope<PaychanguDirectChargeData>>(body)
-        val data = requireNotNull(envelope.data?.chargeId) {
+        val data = requireNotNull(envelope.data) {
+            "Paychangu direct charge response did not include data.charge_id: ${envelope.message}"
+        }
+        require(!data.chargeId.isNullOrBlank()) {
             "Paychangu direct charge response did not include a charge_id: ${envelope.message}"
         }
         return PaychanguDirectChargeResult(

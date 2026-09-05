@@ -76,4 +76,49 @@ class PaymentWebhookController(
         )
         return ResponseEntity.ok("acknowledged")
     }
+
+    @Operation(
+        summary = "Paychangu webhook callback",
+        description = "Receives Paychangu payment events. The Signature header (HMAC-SHA256 of the raw " +
+            "body) is verified before the event is processed; duplicate deliveries are acknowledged without re-processing."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Webhook acknowledged"),
+        ApiResponse(
+            responseCode = "401",
+            description = "Invalid webhook signature",
+            content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+        )
+    )
+    @PostMapping("/paychangu")
+    suspend fun handlePaychanguWebhook(
+        @Parameter(description = "Raw webhook JSON payload", required = true)
+        @RequestBody rawBody: String,
+        @Parameter(description = "HMAC-SHA256 hex signature of the raw body", required = false)
+        @RequestHeader(value = "Signature", required = false) signature: String?
+    ): ResponseEntity<String> {
+        val payload: Map<String, Any> = objectMapper.readValue(rawBody)
+        // Paychangu sends the event type inside the payload (event_type field).
+        val eventType = (payload["event_type"] as? String).takeUnless { it.isNullOrBlank() } ?: "paychangu.unknown"
+        log.info("Received Paychangu webhook: eventType={}", eventType)
+
+        val webhookRequest = GatewayWebhookRequest(
+            eventType = eventType,
+            payload = payload,
+            signature = signature,
+            rawBody = rawBody
+        )
+
+        // Verifies the signature and maps the event to a generic result; throws on invalid signatures.
+        val gateway = gatewayResolver.resolve(GatewayType.PAYCHANGU)
+        val result = gateway.processWebhook(webhookRequest)
+
+        transactionService.processWebhookEvent(webhookRequest, result)
+
+        log.info(
+            "Webhook processed: transactionReference={}, status={}, duplicate={}",
+            result.transactionReference, result.newStatus, result.duplicate
+        )
+        return ResponseEntity.ok("acknowledged")
+    }
 }

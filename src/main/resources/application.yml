@@ -55,6 +55,15 @@ payment:
       merchant-account-number: ${ONEKHUSA_MERCHANT_ACCOUNT_NUMBER:76684641}
       webhook-secret: ${ONEKHUSA_WEBHOOK_SECRET:}
       captured-by: ${ONEKHUSA_CAPTURED_BY:salvation.developer@gmail.com}
+    paychangu:
+      enabled: false
+      environment: sandbox
+      base-url: ${PAYCHANGU_BASE_URL:https://api.paychangu.com}
+      secret-key: ${PAYCHANGU_SECRET_KEY:}
+      webhook-secret: ${PAYCHANGU_WEBHOOK_SECRET:}
+      callback-url: ${PAYCHANGU_CALLBACK_URL:}
+      return-url: ${PAYCHANGU_RETURN_URL:}
+      customization-title: ${PAYCHANGU_CUSTOMIZATION_TITLE:}
 
   reconciliation:
     # Periodic gateway status reconciliation: catches payments whose completion

@@ -69,5 +69,5 @@ class PaychanguApiClient(
         }
     }
 
-    private fun bearerToken(): String = properties.secretKey.trim()
+    private fun bearerToken(): String = "Bearer ${properties.secretKey.trim()}"
 }

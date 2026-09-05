@@ -18,6 +18,7 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
+import java.util.UUID
 
 /**
  * Maps between the provider-neutral core DTOs and Paychangu's wire format.
@@ -56,11 +57,11 @@ class PaychanguMapper(
         request: PaymentRequest,
         gatewayResponse: JsonNode? = null
     ): PaymentResponse = PaymentResponse(
-        transactionId = "", // filled in by TransactionService once persisted
+        transactionId = UUID.randomUUID().toString(), // replaced by TransactionService once persisted
         gateway = request.gateway,
         status = PaymentStatus.AWAITING_CUSTOMER_PAYMENT,
         reference = request.reference,
-        gatewayTransactionId = checkout.inner?.txRef ?: checkout.txRef(),
+        gatewayTransactionId = checkout.inner?.txRef ?: sanitizeTxRef(request.reference),
         paymentInstructions = buildMap {
             checkout.checkoutUrl?.let { put("checkoutUrl", it) }
             checkout.inner?.mode?.let { put("mode", it) }
@@ -96,15 +97,20 @@ class PaychanguMapper(
         request: PaymentRequest,
         gatewayResponse: JsonNode? = null
     ): PaymentResponse = PaymentResponse(
-        transactionId = "", // filled in by TransactionService once persisted
+        transactionId = UUID.randomUUID().toString(), // replaced by TransactionService once persisted
         gateway = request.gateway,
         status = PaymentStatus.PENDING,
         reference = request.reference,
-        gatewayTransactionId = charge.chargeId,
+        // The prefixed charge_id we sent is the stable lookup key: Paychangu
+        // echoes it in webhooks (charge_id), and its prefix routes status polls
+        // to the direct-charge verify endpoint. The gateway-echoed value is kept
+        // in the instructions for observability.
+        gatewayTransactionId = sanitizeChargeId(request.reference),
         paymentInstructions = buildMap {
             charge.refId?.let { put("operatorRefId", it) }
             charge.mobileMoney?.name?.let { put("operator", it) }
             charge.mobile?.let { put("mobile", it) }
+            charge.chargeId?.let { put("gatewayChargeId", it) }
         },
         gatewayResponse = gatewayResponse
     )
@@ -128,6 +134,7 @@ class PaychanguMapper(
         responseMessage = transaction.eventType,
         metadata = metadataOf(
             "channel" to transaction.authorization?.channel,
+            "brand" to transaction.authorization?.brand,
             "operator" to transaction.mobileMoney?.name,
             "charges" to transaction.charges,
             "numberOfAttempts" to transaction.numberOfAttempts,
@@ -154,8 +161,16 @@ class PaychanguMapper(
         return sanitized.take(TX_REF_MAX_LENGTH).ifBlank { sanitizedFallback() }
     }
 
-    /** Direct-charge `charge_id` has the same uniqueness requirement as `tx_ref`. */
-    fun sanitizeChargeId(reference: String): String = sanitizeTxRef(reference)
+    /**
+     * Direct-charge `charge_id` is merchant-supplied (like tx_ref) and must be
+     * unique. It is stamped with [DIRECT_CHARGE_PREFIX] so the adapter can route
+     * status lookups to the direct-charge verify endpoint — Paychangu excludes
+     * direct charges from `/verify-payment/{tx_ref}`. Merchant references that
+     * begin with the same prefix are therefore reserved and cannot be used for
+     * checkout payments.
+     */
+    fun sanitizeChargeId(reference: String): String =
+        DIRECT_CHARGE_PREFIX + sanitizeTxRef(reference).take(TX_REF_MAX_LENGTH - DIRECT_CHARGE_PREFIX.length)
 
     private fun sanitizedFallback(): String = "TX-" + System.nanoTime()
 
@@ -186,6 +201,9 @@ class PaychanguMapper(
         const val METADATA_OPERATOR_REF_ID = "operatorRefId"
 
         const val TX_REF_MAX_LENGTH = 100
+
+        /** Prefix stamped onto direct-charge charge_ids by [sanitizeChargeId]. */
+        const val DIRECT_CHARGE_PREFIX = "PDC-"
 
         /**
          * Payment types this gateway supports, enforced by the gateway facade.

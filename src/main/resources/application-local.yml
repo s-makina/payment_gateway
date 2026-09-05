@@ -37,6 +37,15 @@ payment:
       # No captured-by override here: inherit the fallback from application.yml
       # (${ONEKHUSA_CAPTURED_BY:salvation.developer@gmail.com}) so an unset env
       # var can no longer silently wipe the value to an empty string.
+    paychangu:
+      enabled: true
+      environment: sandbox
+      base-url: ${PAYCHANGU_BASE_URL:https://api.paychangu.com}
+      secret-key: ${PAYCHANGU_SECRET_KEY:}
+      webhook-secret: ${PAYCHANGU_WEBHOOK_SECRET:}
+      callback-url: ${PAYCHANGU_CALLBACK_URL:https://example.com/payments/callback}
+      return-url: ${PAYCHANGU_RETURN_URL:https://example.com/payments/return}
+      customization-title: ${PAYCHANGU_CUSTOMIZATION_TITLE:}
 
 logging:
   level:
