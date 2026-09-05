@@ -36,6 +36,10 @@ dependencies {
 	// Database
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
+	// Flyway 10+ split database support out of flyway-core; without this
+	// module Flyway cannot handle PostgreSQL ("Unsupported Database").
+	// Version is managed by the Spring Boot BOM.
+	implementation("org.flywaydb:flyway-database-postgresql")
 	runtimeOnly("org.postgresql:postgresql")
 	runtimeOnly("com.h2database:h2")
 

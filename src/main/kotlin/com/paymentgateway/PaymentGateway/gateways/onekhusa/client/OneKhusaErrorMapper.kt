@@ -18,7 +18,7 @@ class OneKhusaErrorMapper(
 ) {
 
     fun mapError(ex: WebClientResponseException): GatewayApiException {
-        val statusCode = ex.statusCode.code
+        val statusCode = ex.statusCode.value()
         val httpStatus = when (statusCode) {
             200 -> HttpStatus.OK
             201 -> HttpStatus.CREATED
@@ -35,7 +35,7 @@ class OneKhusaErrorMapper(
             502 -> HttpStatus.BAD_GATEWAY
             503 -> HttpStatus.SERVICE_UNAVAILABLE
             504 -> HttpStatus.GATEWAY_TIMEOUT
-            else -> HttpStatus.valueOf(statusCode)
+            else -> HttpStatus.resolve(statusCode) ?: DEFAULT_STATUS
         }
         val body = parseBody(ex.responseBodyAsString)
         val errorCode = body["errorCode"] as? String
