@@ -37,6 +37,16 @@ management:
 payment:
   gateways:
     default-gateway: ONEKHUSA
+    onekhusa:
+      enabled: false
+      environment: sandbox
+      base-url: ${ONEKHUSA_BASE_URL:https://api.onekhusa.com/sandbox/v1}
+      api-key: ${ONEKHUSA_API_KEY:sandbox_1y9pto5RSBykdybCJnanXgvm1Rg4SiXGmg}
+      api-secret: ${ONEKHUSA_API_SECRET:xTEPvKNebsyjS7DlZa0_7qatm54ptmHEEOwravK3igYYyl6criC5jP5sUoUV}
+      organisation-id: ${ONEKHUSA_ORGANISATION_ID:TUWT67VBHONB}
+      merchant-account-number: ${ONEKHUSA_MERCHANT_ACCOUNT_NUMBER:76684641}
+      webhook-secret: ${ONEKHUSA_WEBHOOK_SECRET:}
+      captured-by: ${ONEKHUSA_CAPTURED_BY:payments@paymentgateway.local}
 
 logging:
   level:
