@@ -41,5 +41,19 @@ data class PaymentRequest(
     )
     val idempotencyKey: String? = null,
     @Schema(description = "Free-form metadata forwarded to the gateway")
-    val metadata: Map<String, Any>? = null
+    val metadata: Map<String, Any>? = null,
+    @field:Size(max = 500)
+    @Schema(
+        description = "Absolute URL the gateway redirects the customer to after payment " +
+            "(used by gateways with hosted checkout, e.g. PAYCHANGU)",
+        example = "https://shop.example.com/payments/INV-10001/callback"
+    )
+    val callbackUrl: String? = null,
+    @field:Size(max = 500)
+    @Schema(
+        description = "Absolute URL the gateway redirects the customer to on cancel/failure " +
+            "(used by gateways with hosted checkout, e.g. PAYCHANGU)",
+        example = "https://shop.example.com/payments/INV-10001/return"
+    )
+    val returnUrl: String? = null
 )

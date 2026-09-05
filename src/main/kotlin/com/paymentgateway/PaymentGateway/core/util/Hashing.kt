@@ -11,6 +11,15 @@ object Hashing {
     fun sha256Hex(input: String): String =
         HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(input.toByteArray(Charsets.UTF_8)))
 
+    fun hmacSha256Hex(input: String, secret: String): String =
+        HexFormat.of().formatHex(hmacSha256Digest(input, secret))
+
+    private fun hmacSha256Digest(input: String, secret: String): ByteArray {
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(secret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        return mac.doFinal(input.toByteArray(Charsets.UTF_8))
+    }
+
     fun hmacSha512Hex(input: String, secret: String): String =
         HexFormat.of().formatHex(hmacSha512Digest(input, secret))
 
