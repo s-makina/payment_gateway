@@ -10,7 +10,7 @@ import java.time.Instant
 data class PaymentResponse(
     @Schema(description = "Internal transaction ID", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
     val transactionId: String,
-    @Schema(description = "Gateway that received the payment", example = "ONEKHUSA")
+    @Schema(description = "Gateway that received the payment", example = "PAYCHANGU")
     val gateway: GatewayType,
     @Schema(description = "Current transaction status", example = "AWAITING_CUSTOMER_PAYMENT")
     val status: PaymentStatus,

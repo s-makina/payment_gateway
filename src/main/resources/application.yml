@@ -44,7 +44,7 @@ springdoc:
 
 payment:
   gateways:
-    default-gateway: ONEKHUSA
+    default-gateway: PAYCHANGU
     onekhusa:
       enabled: false
       environment: sandbox

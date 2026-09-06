@@ -13,7 +13,7 @@ import java.util.UUID
 data class PaymentStatusResponse(
     @Schema(description = "Internal transaction ID")
     val transactionId: UUID,
-    @Schema(description = "Gateway handling the payment", example = "ONEKHUSA")
+    @Schema(description = "Gateway handling the payment", example = "PAYCHANGU")
     val gateway: GatewayType,
     @Schema(description = "Merchant reference", example = "INV-10001")
     val merchantReference: String,

@@ -16,7 +16,7 @@ data class PaymentRequest(
     @Schema(description = "Gateway to route the payment through", example = "PAYCHANGU")
     val gateway: GatewayType,
     @field:NotNull
-    @Schema(description = "Type of payment", example = "REQUEST_TO_PAY")
+    @Schema(description = "Type of payment", example = "COLLECTION")
     val paymentType: PaymentType,
     @field:NotNull
     @field:Positive

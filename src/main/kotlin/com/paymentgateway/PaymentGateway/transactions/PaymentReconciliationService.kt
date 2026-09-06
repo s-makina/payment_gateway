@@ -1,6 +1,8 @@
 package com.paymentgateway.PaymentGateway.transactions
 
+import com.paymentgateway.PaymentGateway.core.domain.GatewayType
 import com.paymentgateway.PaymentGateway.core.domain.PaymentStatus
+import com.paymentgateway.PaymentGateway.core.exceptions.GatewayNotSupportedException
 import com.paymentgateway.PaymentGateway.core.gateway.PaymentGatewayResolver
 import com.paymentgateway.PaymentGateway.core.gateway.PaymentStatusResult
 import kotlinx.coroutines.CancellationException
@@ -60,6 +62,16 @@ class PaymentReconciliationService(
             }
             val gateway = try {
                 gatewayResolver.resolve(transaction.gateway)
+            } catch (ex: GatewayNotSupportedException) {
+                // Gateway is disabled or not configured - skip gracefully.
+                // This is expected when a gateway is intentionally turned off while
+                // transactions exist for it.
+                skipped++
+                log.debug(
+                    "Reconciliation skipped: gateway not available for transactionId={}, gateway={}",
+                    transaction.id, transaction.gateway
+                )
+                continue
             } catch (ex: Exception) {
                 failed++
                 log.warn(
@@ -104,6 +116,13 @@ class PaymentReconciliationService(
                 }
             } catch (ex: CancellationException) {
                 throw ex
+            } catch (ex: GatewayNotSupportedException) {
+                // Gateway became unavailable mid-reconciliation - treat as skip.
+                skipped++
+                log.debug(
+                    "Reconciliation skipped during lookup: transactionId={}, gateway={}",
+                    transaction.id, transaction.gateway
+                )
             } catch (ex: Exception) {
                 failed++
                 log.warn(
