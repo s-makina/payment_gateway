@@ -95,8 +95,8 @@ class PaychanguFlowIntegrationTest {
                             }
                             """.trimIndent()
                         )
+                        .withTransformers("response-template")
                     )
-                    .withTransformers("response-template")
             )
             // Direct MoMo charge initiation.
             wireMock.stubFor(
@@ -154,7 +154,7 @@ class PaychanguFlowIntegrationTest {
                               "message": "Payment details retrieved successfully.",
                               "data": {
                                 "event_type": "checkout.payment",
-                                "tx_ref": "ae041eae-6abd-4602-a949-56fbd65c29fe",
+                                "tx_ref": "INV-30001",
                                 "mode": "sandbox",
                                 "type": "API Payment (Checkout)",
                                 "status": "success",
@@ -214,13 +214,14 @@ class PaychanguFlowIntegrationTest {
         assertEquals("AWAITING_CUSTOMER_PAYMENT", initiateMap["status"])
         val paymentInstructions = initiateMap["paymentInstructions"] as Map<*, *>
         assertEquals("https://test-checkout.paychangu.com/7887951180", paymentInstructions["checkoutUrl"])
-        assertEquals("ae041eae-6abd-4602-a949-56fbd65c29fe", initiateMap["gatewayTransactionId"])
+        // The gateway echoes our tx_ref, which becomes the lookup key.
+        assertEquals("INV-30001", initiateMap["gatewayTransactionId"])
 
         // 2. Deliver a signed checkout.payment webhook
         val webhookBody = """
             {
               "event_type": "checkout.payment",
-              "tx_ref": "ae041eae-6abd-4602-a949-56fbd65c29fe",
+              "tx_ref": "INV-30001",
               "reference": "26262633201",
               "currency": "MWK",
               "amount": 10000,

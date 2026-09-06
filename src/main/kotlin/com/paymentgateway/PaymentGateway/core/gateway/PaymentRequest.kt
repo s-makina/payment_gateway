@@ -13,7 +13,7 @@ import java.math.BigDecimal
 @Schema(description = "Provider-neutral payment initiation request")
 data class PaymentRequest(
     @field:NotNull
-    @Schema(description = "Gateway to route the payment through", example = "ONEKHUSA")
+    @Schema(description = "Gateway to route the payment through", example = "PAYCHANGU")
     val gateway: GatewayType,
     @field:NotNull
     @Schema(description = "Type of payment", example = "REQUEST_TO_PAY")

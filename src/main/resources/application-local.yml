@@ -41,11 +41,11 @@ payment:
       enabled: true
       environment: sandbox
       base-url: ${PAYCHANGU_BASE_URL:https://api.paychangu.com}
-      secret-key: ${PAYCHANGU_SECRET_KEY:}
-      webhook-secret: ${PAYCHANGU_WEBHOOK_SECRET:}
+      secret-key: ${PAYCHANGU_SECRET_KEY:sec-test-K9lZTFw2rLxTdYA5MqSwkqmf6Upari0M}
+      webhook-secret: ${PAYCHANGU_WEBHOOK_SECRET:pub-test-hJ0SLTOfNXFCQai8dEipe6ZMjOoOARMh}
       callback-url: ${PAYCHANGU_CALLBACK_URL:https://example.com/payments/callback}
       return-url: ${PAYCHANGU_RETURN_URL:https://example.com/payments/return}
-      customization-title: ${PAYCHANGU_CUSTOMIZATION_TITLE:}
+      customization-title: ${PAYCHANGU_CUSTOMIZATION_TITLE:Make Payment}
 
 logging:
   level:
